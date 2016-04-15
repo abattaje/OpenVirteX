@@ -22,11 +22,13 @@ import java.util.Map;
 import net.onrc.openvirtex.api.service.handlers.ApiHandler;
 import net.onrc.openvirtex.api.service.handlers.HandlerUtils;
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
+import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.elements.address.IPAddress;
 import net.onrc.openvirtex.elements.address.OVXIPAddress;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
 import net.onrc.openvirtex.exceptions.ControllerUnavailableException;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
+import net.onrc.openvirtex.exceptions.DuplicateIndexException;
 import net.onrc.openvirtex.exceptions.MissingRequiredField;
 
 import org.apache.logging.log4j.LogManager;
@@ -46,6 +48,10 @@ public class CreateOVXNetwork extends ApiHandler<Map<String, Object>> {
         JSONRPC2Response resp = null;
         try {
 
+        	/*Added by abattaje*/
+        	final Number tenantId = HandlerUtils.<Number>fetchField(
+                    TenantHandler.TENANT, params, true, null);
+        	
             final ArrayList<String> ctrlUrls = HandlerUtils
                     .<ArrayList<String>>fetchField(TenantHandler.CTRLURLS,
                             params, true, null);
@@ -61,7 +67,11 @@ public class CreateOVXNetwork extends ApiHandler<Map<String, Object>> {
                         Integer.parseInt(ctrlParts[2]), -1);
             }
             final IPAddress addr = new OVXIPAddress(netAddress, -1);
-            final OVXNetwork virtualNetwork = new OVXNetwork(ctrlUrls, addr,
+            /*final OVXNetwork virtualNetwork = new OVXNetwork(ctrlUrls, addr,
+                    netMask.shortValue());*/
+            
+            int tenantID = OpenVirteXController.getTenantCounter().getNewIndex(tenantId.intValue());
+            final OVXNetwork virtualNetwork = new OVXNetwork(tenantID, ctrlUrls, addr,
                     netMask.shortValue());
             virtualNetwork.register();
             this.log.info("Created virtual network {}",
@@ -87,6 +97,13 @@ public class CreateOVXNetwork extends ApiHandler<Map<String, Object>> {
                             JSONRPC2Error.INVALID_PARAMS.getCode(),
                             this.cmdName()
                                     + ": Impossible to create the virtual network, too many networks : "
+                                    + e.getMessage()), 0);
+        } catch (final DuplicateIndexException e) {
+        	resp = new JSONRPC2Response(
+                    new JSONRPC2Error(
+                            JSONRPC2Error.INVALID_PARAMS.getCode(),
+                            this.cmdName()
+                                    + ": Duplicate tenant ID : "
                                     + e.getMessage()), 0);
         }
         return resp;
