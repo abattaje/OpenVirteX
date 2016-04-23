@@ -97,14 +97,20 @@ public class ConnectHost extends ApiHandler<Map<String, Object>> {
                 // Send the message to server here
                 JSONObject jsonMessage = new JSONObject();
                 jsonMessage.put("op", "ADD");
-                jsonMessage.put("tenantId", tenantId.intValue());
-                jsonMessage.put("hostId", host.getHostId());
-                String SERVERIP = "10.0.0.16";
+                Map<String, Object> data = new HashMap<String, Object>();
+                data.put("tenantId", virtualNetwork.getTenantId());
+                data.put("switchId", host.getPort().getParentSwitch().getSwitchName());
+                data.put("port", host.getPort().getPortNumber());
+                data.put("mac", host.getMac().toString());
+                jsonMessage.put("data", data);
+                this.log.info("JSON Message: {}", jsonMessage.toString());
+                String SERVERIP = "10.0.0.22";
                 int SERVERPORT = 50000;
                 Socket socket = new Socket(SERVERIP, SERVERPORT);
                 OutputStreamWriter out = new OutputStreamWriter(
                         socket.getOutputStream(), StandardCharsets.UTF_8);
                 out.write(jsonMessage.toString());
+                out.close();
                 socket.close();
             }
 

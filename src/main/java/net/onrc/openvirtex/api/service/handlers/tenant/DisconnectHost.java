@@ -18,6 +18,7 @@ package net.onrc.openvirtex.api.service.handlers.tenant;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.Map;
 
 import net.minidev.json.JSONObject;
@@ -75,14 +76,19 @@ public class DisconnectHost extends ApiHandler<Map<String, Object>> {
             // Send the message to server here
             JSONObject jsonMessage = new JSONObject();
             jsonMessage.put("op", "DELETE");
-            jsonMessage.put("tenantId", tenantId.intValue());
-            jsonMessage.put("hostId", hostId.intValue());
-            String SERVERIP = "10.0.0.16";
+            
+            Map<String, Object> data = new HashMap<String, Object>();
+            data.put("tenantId", virtualNetwork.getTenantId());
+            data.put("hostId", hostId.intValue());
+            jsonMessage.put("data", data);
+            this.log.info("JSON Message: {}", jsonMessage.toString());
+            String SERVERIP = "10.0.0.22";
             int SERVERPORT = 50000;
             Socket socket = new Socket(SERVERIP, SERVERPORT);
             OutputStreamWriter out = new OutputStreamWriter(
             		socket.getOutputStream(), StandardCharsets.UTF_8);
             out.write(jsonMessage.toString());
+            out.close();
             socket.close();
 
         } catch (final MissingRequiredField e) {
