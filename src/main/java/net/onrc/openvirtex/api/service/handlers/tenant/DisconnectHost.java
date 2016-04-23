@@ -15,8 +15,12 @@
  ******************************************************************************/
 package net.onrc.openvirtex.api.service.handlers.tenant;
 
+import java.io.OutputStreamWriter;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
+import net.minidev.json.JSONObject;
 import net.onrc.openvirtex.api.service.handlers.ApiHandler;
 import net.onrc.openvirtex.api.service.handlers.HandlerUtils;
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
@@ -33,6 +37,9 @@ import org.apache.logging.log4j.Logger;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2ParamsType;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
+
+import java.io.IOException;
+
 
 /**
  * Handler to disconnect a host.
@@ -63,6 +70,20 @@ public class DisconnectHost extends ApiHandler<Map<String, Object>> {
             this.log.info("Disconnected host {} in virtual network {}", hostId,
                     tenantId);
             resp = new JSONRPC2Response(0);
+            
+            /* Added by abattaje */
+            // Send the message to server here
+            JSONObject jsonMessage = new JSONObject();
+            jsonMessage.put("op", "DELETE");
+            jsonMessage.put("tenantId", tenantId.intValue());
+            jsonMessage.put("hostId", hostId.intValue());
+            String SERVERIP = "10.0.0.16";
+            int SERVERPORT = 50000;
+            Socket socket = new Socket(SERVERIP, SERVERPORT);
+            OutputStreamWriter out = new OutputStreamWriter(
+            		socket.getOutputStream(), StandardCharsets.UTF_8);
+            out.write(jsonMessage.toString());
+            socket.close();
 
         } catch (final MissingRequiredField e) {
             resp = new JSONRPC2Response(
@@ -81,6 +102,10 @@ public class DisconnectHost extends ApiHandler<Map<String, Object>> {
             resp = new JSONRPC2Response(new JSONRPC2Error(
                     JSONRPC2Error.INVALID_PARAMS.getCode(), this.cmdName()
                             + ": " + e.getMessage()), 0);
+        } catch (final IOException e) {
+        	resp = new JSONRPC2Response(new JSONRPC2Error(
+                    JSONRPC2Error.INVALID_PARAMS.getCode(), this.cmdName()
+                    + ": " + e.getMessage()), 0);
         }
 
         return resp;

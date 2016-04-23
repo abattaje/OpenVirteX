@@ -39,6 +39,14 @@ import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2ParamsType;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
 
+import net.minidev.json.JSONObject;
+
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+
+
 public class ConnectHost extends ApiHandler<Map<String, Object>> {
 
     Logger log = LogManager.getLogger(ConnectHost.class.getName());
@@ -85,6 +93,19 @@ public class ConnectHost extends ApiHandler<Map<String, Object>> {
                         host.getDBObject());
                 reply.put(TenantHandler.TENANT, tenantId.intValue());
                 resp = new JSONRPC2Response(reply, 0);
+                /* Added by abattaje */
+                // Send the message to server here
+                JSONObject jsonMessage = new JSONObject();
+                jsonMessage.put("op", "ADD");
+                jsonMessage.put("tenantId", tenantId.intValue());
+                jsonMessage.put("hostId", host.getHostId());
+                String SERVERIP = "10.0.0.16";
+                int SERVERPORT = 50000;
+                Socket socket = new Socket(SERVERIP, SERVERPORT);
+                OutputStreamWriter out = new OutputStreamWriter(
+                        socket.getOutputStream(), StandardCharsets.UTF_8);
+                out.write(jsonMessage.toString());
+                socket.close();
             }
 
         } catch (final MissingRequiredField e) {
@@ -115,6 +136,10 @@ public class ConnectHost extends ApiHandler<Map<String, Object>> {
             resp = new JSONRPC2Response(new JSONRPC2Error(
                     JSONRPC2Error.INVALID_PARAMS.getCode(), this.cmdName()
                             + ": " + e.getMessage()), 0);
+        } catch (final IOException e) {
+        	resp = new JSONRPC2Response(new JSONRPC2Error(
+                    JSONRPC2Error.INVALID_PARAMS.getCode(), this.cmdName()
+                    + ": " + e.getMessage()), 0);
         }
 
         return resp;
